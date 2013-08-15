@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Copyright 2013 Olivier Caron-Lizotte
+ * olivierlizotte@gmail.com
+ * Licensed under the MIT license: <http://www.opensource.org/licenses/mit-license.php>
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +13,9 @@ using Cudafy.Translator;
 
 namespace Trinity_Gpu
 {
+    /// <summary>
+    /// Object returned with results
+    /// </summary>
     public class ProteinPrecursorMatch
     {
         public int proteinStartPos;
@@ -15,6 +23,11 @@ namespace Trinity_Gpu
         public int firstQueryIndex;
     }
 
+    /// <summary>
+    /// This class is used to digest, inGraphico, a protein sequence (as a set of weights) into peptide sequences (as a starting point and a length)
+    /// Will only report peptides matching a list of given masses
+    /// TODO transform the protein mass array into a matrix to have the possibility of including variable modifications
+    /// </summary>
     public class ProteinDigest
     {
         private GPGPU gpu;
