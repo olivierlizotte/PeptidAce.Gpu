@@ -114,45 +114,6 @@ namespace Trinity_Gpu
                 }
             }//*/
         }
-        /*
-        [Cudafy]
-        public static void test(GThread thread, double[] dev_prot, int[] dev_outputStart)
-        {
-            int tid = thread.threadIdx.x;// +thread.blockIdx.x * thread.blockDim.x;
-            //int aminoAcidIndex = 13;// thread.gridDim.x;
-            //int precursorIndex = thread.blockIdx.x * thread.blockDim.x;
-            if (tid == 0)
-            {
-                dev_outputStart[0] = tid;
-                dev_outputStart[1] = thread.blockIdx.x;
-                dev_outputStart[2] = thread.blockDim.x;
-                dev_outputStart[3] = thread.threadIdx.x;
-                dev_outputStart[4] = thread.threadIdx.x;
-                dev_outputStart[5] = 13;
-            }
-        }//*/
-        /*
-        public static void matchSpectrum(GThread thread, double[] dev_prot, double[] dev_prec, int[] dev_outputStart, int[] dev_outputEnd, int nbProt, int nbPrec, double precision, double maxWeight)
-        {
-            for (int aminoAcidIndex = 0; aminoAcidIndex < nbProt; aminoAcidIndex++ )
-            {
-                int aminoAcidCumulIndex = aminoAcidIndex;
-                double cumulMassProt = 0.0;
-                while (aminoAcidCumulIndex < nbProt && cumulMassProt < maxWeight)
-                {
-                    cumulMassProt += dev_prot[aminoAcidCumulIndex];
-                    for (int i = 0; i < nbPrec; i++)
-                    {
-                        if (dev_prec[i] >= cumulMassProt - precision && dev_prec[i] <= cumulMassProt + precision)
-                        {
-                            dev_outputStart[i] = aminoAcidIndex;
-                            dev_outputEnd[i] = aminoAcidCumulIndex;
-                        }
-                    }
-                    aminoAcidCumulIndex++;
-                }
-            }
-        }//*/
 
         // Does not return all possible mixes!
         [Cudafy]
@@ -190,48 +151,5 @@ namespace Trinity_Gpu
                 }
             }
         }
-
-        [Cudafy]
-        public static void checkPeptide(GThread thread, double[] dev_prot, double[] dev_prec, int[] dev_outputStart, int[] dev_outputEnd, int nbProt, int nbPrec, double precision, double maxWeight)
-        {
-            int aminoAcidIndex = thread.blockIdx.x;
-            int precursorIndex = thread.threadIdx.x;
-
-            int aminoAcidCumulIndex = aminoAcidIndex;
-            double cumulMass = 0.0;
-            while (aminoAcidCumulIndex < nbProt && cumulMass < maxWeight)
-            {
-                cumulMass += dev_prot[aminoAcidCumulIndex];
-                if ((dev_prec[precursorIndex] > cumulMass && dev_prec[precursorIndex] - precision <= cumulMass) ||
-                   (dev_prec[precursorIndex] < cumulMass && dev_prec[precursorIndex] + precision >= cumulMass))
-                {
-                    dev_outputStart[precursorIndex] = aminoAcidIndex;
-                    dev_outputEnd[precursorIndex] = aminoAcidCumulIndex;
-                }
-                aminoAcidCumulIndex++;
-            }
-        }
-        //*/
-
-        /*         
-        [Cudafy]
-        public static void checkPeptide(GThread thread, double[] dev_prot, double[] dev_prec, int[] dev_outputStart, int[] dev_outputEnd, int nbProt, int nbPrec, double precision, double maxWeight, int proteinStartPos)
-        {
-            int aminoAcidIndex = proteinStartPos;
-            int precursorIndex = thread.blockDim.x;
-
-            int aminoAcidCumulIndex = aminoAcidIndex;
-            double cumulMass = 0.0;
-            while (aminoAcidCumulIndex < nbProt || cumulMass > maxWeight)
-            {
-                cumulMass += dev_prot[aminoAcidCumulIndex];
-                if ((dev_prec[precursorIndex] > cumulMass && dev_prec[precursorIndex] - precision <= cumulMass) ||
-                   (dev_prec[precursorIndex] < cumulMass && dev_prec[precursorIndex] + precision >= cumulMass))
-                {
-                    dev_outputStart[precursorIndex] = aminoAcidIndex;
-                    dev_outputEnd[precursorIndex] = aminoAcidCumulIndex;
-                }
-            }
-        }//*/
     }
 }
