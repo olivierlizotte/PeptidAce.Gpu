@@ -85,7 +85,7 @@ namespace Trinity_Gpu
                 if (gpu.IsOnGPU(dev_outputStart))
                     gpu.CopyFromDevice(dev_outputStart, 0, outputStart, 0, aminoAcidSequenceMasses.Length * maxPeptideLength);
                 else
-                    Console.WriteLine("B@#$@#$T");//*/
+                    dbOptions.ConSole.WriteLine("B@#$@#$T");//*/
                 //gpu.CopyFromDevice(dev_outputEnd, outputEnd);
                 gpu.Synchronize();
                 gpu.Free(dev_prot);
