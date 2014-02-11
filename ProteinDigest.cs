@@ -11,7 +11,7 @@ using Cudafy;
 using Cudafy.Host;
 using Cudafy.Translator;
 
-namespace Trinity_Gpu
+namespace PeptidAce.GPU
 {
     /// <summary>
     /// Object returned with results
@@ -21,6 +21,12 @@ namespace Trinity_Gpu
         public int proteinStartPos;
         public int proteinEndPos;
         public int firstQueryIndex;
+        public ProteinPrecursorMatch(int start, int stop, int index)
+        {
+            proteinStartPos = start;
+            proteinEndPos = stop;
+            firstQueryIndex = index;
+        }
     }
 
     /// <summary>
@@ -30,7 +36,9 @@ namespace Trinity_Gpu
     /// </summary>
     public class ProteinDigest
     {
+        //Cudafy gpu object
         private GPGPU gpu;
+        
         private int maxGridSize;
         private int peptideArraySize;
         private int maxPeptideSize;
@@ -55,6 +63,7 @@ namespace Trinity_Gpu
             this.minPeptideSize = minPeptideLength;
             this.outputStart = new int[maxGridSize * peptideArraySize];
 
+            //Allocate vector that will store the results
             dev_outputStart = gpu.Allocate<int>(maxGridSize * peptideArraySize);
         }
 
@@ -70,24 +79,20 @@ namespace Trinity_Gpu
                 // copy the arrays to the GPU
                 double[] dev_prot = gpu.Allocate<double>(aminoAcidSequenceMasses);
                 gpu.CopyToDevice(aminoAcidSequenceMasses, dev_prot);
-                //double[] dev_prot = gpu.CopyToDevice(aminoAcidSequenceMasses);
 
-                // Launch 128 blocks of 128 threads each
                 if (maxGridSize < aminoAcidSequenceMasses.Length)
                     Console.WriteLine("GPU not supporting protein length above " + maxGridSize);
 
                 double precisionInPPMDivided = precisionInPPM / 1e6;
                 int size = 1 + aminoAcidSequenceMasses.Length / 32;
-                //int size = 1 + 1234 / 32;
+                
+                //Launch the spectrum matching AND noenzyme in silico protein digest on the GPU
                 gpu.Launch(size, 32).matchSpectrum(dev_prot, dev_prec, dev_outputStart, precisionInPPMDivided, maxWeight, peptideArraySize, minPeptideSize);
-                //matchSpectrum(null, aminoAcidSequenceMasses, potentialPrecursors, outputStart, outputEnd, aminoAcidSequenceMasses.Length, potentialPrecursors.Length, precision, maxWeight);                
-                /*
-                if (gpu.IsOnGPU(dev_outputStart))
-                    gpu.CopyFromDevice(dev_outputStart, 0, outputStart, 0, aminoAcidSequenceMasses.Length * maxPeptideLength);
-                else
-                    dbOptions.ConSole.WriteLine("B@#$@#$T");//*/
-                //gpu.CopyFromDevice(dev_outputEnd, outputEnd);
+                
+                //Make sure everything was executed before going forward
                 gpu.Synchronize();
+
+                //Free the protein mass array
                 gpu.Free(dev_prot);
             }
             catch (Exception ex)
@@ -95,27 +100,19 @@ namespace Trinity_Gpu
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(ex.StackTrace);
             }
-            //return outputStart;
 
-            //int[] test = new int[maxPeptideLength];
-            ProteinPrecursorMatch result = new ProteinPrecursorMatch();            
+            //Return every match one at a time, by yielding the Protein Precursor Match object
             for (int i = 0; i < aminoAcidSequenceMasses.Length; i++)
             {
                 gpu.CopyFromDevice(dev_outputStart, i * peptideArraySize, outputStart, 0, peptideArraySize);
                 for (int j = 0; j < peptideArraySize; j++)
                 {
-                    if (outputStart[j] >= 0)//i + j * maxPeptideLength] >= 0)
-                    {
-                        result.proteinStartPos = i;// outputStart[i] + 1;
-                        result.proteinEndPos = i + j + minPeptideSize - 1;
-                        result.firstQueryIndex = outputStart[j];//i + j * maxPeptideLength];
-                        yield return result;
-                    }
+                    if (outputStart[j] >= 0)
+                        yield return new ProteinPrecursorMatch(i, i + j + minPeptideSize - 1, outputStart[j]);
                 }
             }//*/
         }
 
-        // Does not return all possible mixes!
         [Cudafy]
         public static void matchSpectrum(GThread thread, double[] dev_prot, double[] dev_prec, int[] dev_outputStart, double precisionInPPMDivided, double maxWeight, int peptideArraySize, int minPeptideSize)
         {
